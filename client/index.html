@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Запись на массаж</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <header class="header">
+            <h1>📅 Запись на массаж</h1>
+            <div class="balance">
+                💰 Баланс: <span id="balance">0</span> коинов
+            </div>
+        </header>
+
+        <!-- Выбор месяца -->
+        <div class="month-selector">
+            <button id="prevMonth" class="btn-month">◀</button>
+            <h2 id="currentMonth">Январь 2024</h2>
+            <button id="nextMonth" class="btn-month">▶</button>
+        </div>
+
+        <!-- Календарь -->
+        <div class="calendar" id="calendar">
+            <!-- Дни недели -->
+            <div class="weekdays">
+                <div>Пн</div>
+                <div>Вт</div>
+                <div>Ср</div>
+                <div>Чт</div>
+                <div>Пт</div>
+                <div>Сб</div>
+                <div>Вс</div>
+            </div>
+            <!-- Даты генерируются в JS -->
+            <div class="days" id="days"></div>
+        </div>
+
+        <!-- Доступные слоты для выбранной даты -->
+        <div class="time-slots" id="timeSlots" style="display: none;">
+            <h3>Доступное время на <span id="selectedDate"></span></h3>
+            <div id="slotsList"></div>
+        </div>
+
+        <!-- Подтверждение бронирования -->
+        <div class="confirmation" id="confirmation" style="display: none;">
+            <div class="confirmation-card">
+                <h3>✅ Подтвердите запись</h3>
+                <p><strong>Дата:</strong> <span id="confirmDate"></span></p>
+                <p><strong>Время:</strong> <span id="confirmTime"></span></p>
+                <p><strong>Стоимость:</strong> 1 коин</p>
+                <div class="button-group">
+                    <button id="confirmBtn" class="btn btn-primary">Подтвердить</button>
+                    <button id="cancelBtn" class="btn btn-secondary">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loader -->
+        <div class="loader" id="loader" style="display: none;">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <script src="calendar.js"></script>
+</body>
+</html>

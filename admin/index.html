@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Управление расписанием</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <header class="header">
+            <h1>🗓️ Управление расписанием</h1>
+        </header>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="calendar">Календарь</button>
+            <button class="tab" data-tab="create">Создать слоты</button>
+            <button class="tab" data-tab="bookings">Записи</button>
+        </div>
+
+        <!-- Tab: Календарь -->
+        <div class="tab-content active" id="calendar-tab">
+            <div class="month-selector">
+                <button id="prevMonth" class="btn-month">◀</button>
+                <h2 id="currentMonth">Январь 2024</h2>
+                <button id="nextMonth" class="btn-month">▶</button>
+            </div>
+
+            <div class="calendar">
+                <div class="weekdays">
+                    <div>Пн</div>
+                    <div>Вт</div>
+                    <div>Ср</div>
+                    <div>Чт</div>
+                    <div>Пт</div>
+                    <div>Сб</div>
+                    <div>Вс</div>
+                </div>
+                <div class="days" id="days"></div>
+            </div>
+
+            <!-- Детали выбранного дня -->
+            <div class="day-details" id="dayDetails" style="display: none;">
+                <h3>📅 <span id="detailsDate"></span></h3>
+                <div id="slotsList"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Создание слотов -->
+        <div class="tab-content" id="create-tab">
+            <div class="form-card">
+                <h3>Создать слоты на день</h3>
+
+                <label>Дата:</label>
+                <input type="date" id="slotDate" class="input">
+
+                <label>Временные диапазоны (каждый с новой строки):</label>
+                <textarea id="timeRanges" class="textarea" placeholder="10:00-11:00&#10;11:00-12:00&#10;14:00-15:00&#10;15:00-16:00"></textarea>
+
+                <button id="createSlotsBtn" class="btn btn-primary">Создать слоты</button>
+            </div>
+
+            <div class="form-card">
+                <h3>Массовое создание</h3>
+
+                <label>Период:</label>
+                <input type="date" id="bulkStartDate" class="input">
+                <input type="date" id="bulkEndDate" class="input">
+
+                <label>Дни недели:</label>
+                <div class="weekday-selector">
+                    <label><input type="checkbox" value="1" checked> Пн</label>
+                    <label><input type="checkbox" value="2" checked> Вт</label>
+                    <label><input type="checkbox" value="3" checked> Ср</label>
+                    <label><input type="checkbox" value="4" checked> Чт</label>
+                    <label><input type="checkbox" value="5" checked> Пт</label>
+                    <label><input type="checkbox" value="6"> Сб</label>
+                    <label><input type="checkbox" value="0"> Вс</label>
+                </div>
+
+                <label>Временные диапазоны:</label>
+                <textarea id="bulkTimeRanges" class="textarea" placeholder="10:00-11:00&#10;11:00-12:00&#10;14:00-15:00"></textarea>
+
+                <button id="bulkCreateBtn" class="btn btn-primary">Создать на период</button>
+            </div>
+        </div>
+
+        <!-- Tab: Записи -->
+        <div class="tab-content" id="bookings-tab">
+            <div class="filter-bar">
+                <select id="statusFilter" class="input">
+                    <option value="all">Все записи</option>
+                    <option value="confirmed" selected>Подтвержденные</option>
+                    <option value="completed">Завершенные</option>
+                    <option value="cancelled">Отмененные</option>
+                </select>
+
+                <input type="date" id="dateFilter" class="input">
+            </div>
+
+            <div id="bookingsList">
+                <!-- Список записей генерируется в JS -->
+            </div>
+        </div>
+
+        <!-- Loader -->
+        <div class="loader" id="loader" style="display: none;">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <script src="schedule.js"></script>
+</body>
+</html>

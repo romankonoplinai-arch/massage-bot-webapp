@@ -1,0 +1,426 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--tg-theme-bg-color, #f5f5f5);
+    color: var(--tg-theme-text-color, #000000);
+    padding: 0;
+    margin: 0;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+/* Заголовок */
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    border-radius: 16px;
+    color: white;
+    box-shadow: 0 4px 12px rgba(240, 147, 251, 0.3);
+}
+
+.header h1 {
+    font-size: 22px;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    background: white;
+    padding: 4px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tab {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #666;
+}
+
+.tab.active {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Выбор месяца */
+.month-selector {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 12px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.month-selector h2 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.btn-month {
+    background: #f5576c;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.btn-month:active {
+    transform: scale(0.95);
+}
+
+/* Календарь */
+.calendar {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 12px;
+    color: #999;
+}
+
+.days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+
+.day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+
+.day.empty {
+    cursor: default;
+}
+
+.day.has-slots {
+    background: #e3f2fd;
+    color: #1976d2;
+    border-color: #2196f3;
+}
+
+.day.has-bookings {
+    background: #fff3e0;
+    color: #f57c00;
+    border-color: #ff9800;
+}
+
+.day.today {
+    font-weight: 700;
+    box-shadow: 0 0 0 2px #f5576c;
+}
+
+.day.selected {
+    background: #f5576c !important;
+    color: white !important;
+    transform: scale(1.05);
+}
+
+/* Детали дня */
+.day-details {
+    margin-top: 20px;
+    padding: 16px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.day-details h3 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: #f5576c;
+}
+
+.slot-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.slot-time {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.slot-status {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.slot-status.available {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.slot-status.booked {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.slot-status.blocked {
+    background: #f5f5f5;
+    color: #9e9e9e;
+}
+
+.slot-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-icon {
+    padding: 6px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-block {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.btn-delete {
+    background: #f5f5f5;
+    color: #666;
+}
+
+/* Формы */
+.form-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.form-card h3 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: #f5576c;
+}
+
+label {
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border 0.2s;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #f5576c;
+}
+
+.textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    min-height: 120px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.textarea:focus {
+    outline: none;
+    border-color: #f5576c;
+}
+
+.weekday-selector {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.weekday-selector label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.weekday-selector input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 16px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+/* Фильтры */
+.filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+/* Записи */
+.booking-item {
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 12px;
+}
+
+.booking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.booking-client {
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+}
+
+.booking-status {
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.booking-status.confirmed {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.booking-status.completed {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.booking-status.cancelled {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.booking-info {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+/* Loader */
+.loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #f5576c;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
