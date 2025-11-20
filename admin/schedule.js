@@ -453,40 +453,52 @@ async function bulkCreateSlots() {
 async function loadBookings() {
     showLoader(true);
     try {
-        // TODO: Реальный запрос
-        // bookingsData = await fetch(...).then(r => r.json());
+        const status = document.getElementById('statusFilter').value;
+        const date = document.getElementById('dateFilter').value;
 
-        // Заглушка
-        bookingsData = [
-            { id: 1, client: 'Иванова Мария', phone: '+79001234567', date: '2024-12-20', time: '10:00-11:00', status: 'confirmed' },
-            { id: 2, client: 'Петров Иван', phone: '+79009876543', date: '2024-12-20', time: '11:00-12:00', status: 'completed' },
-            { id: 3, client: 'Сидорова Анна', phone: '+79005551234', date: '2024-12-21', time: '14:00-15:00', status: 'confirmed' },
-        ];
+        let url = `${API_URL}/admin/bookings?init_data=${encodeURIComponent(tg.initData)}`;
 
-        filterBookings();
+        if (status && status !== 'all') {
+            url += `&status=${status}`;
+        }
+
+        if (date) {
+            url += `&start_date=${date}&end_date=${date}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+            // Преобразуем формат для совместимости
+            bookingsData = data.bookings.map(b => ({
+                id: b.id,
+                client_name: b.client_name,
+                client_phone: b.client_phone,
+                date: b.date,
+                start_time: b.start_time,
+                end_time: b.end_time,
+                status: b.status,
+                source: b.source,
+                is_manual: b.is_manual
+            }));
+
+            renderBookings(bookingsData);
+        } else {
+            console.error('Ошибка загрузки записей:', data.error);
+            tg.showAlert('❌ Ошибка загрузки записей');
+        }
     } catch (error) {
         console.error('Ошибка загрузки записей:', error);
+        tg.showAlert('❌ Ошибка загрузки записей');
     } finally {
         showLoader(false);
     }
 }
 
-// Фильтрация записей
+// Фильтрация записей (перезагружаем с фильтрами)
 function filterBookings() {
-    const status = document.getElementById('statusFilter').value;
-    const date = document.getElementById('dateFilter').value;
-
-    let filtered = bookingsData;
-
-    if (status !== 'all') {
-        filtered = filtered.filter(b => b.status === status);
-    }
-
-    if (date) {
-        filtered = filtered.filter(b => b.date === date);
-    }
-
-    renderBookings(filtered);
+    loadBookings();
 }
 
 // Рендеринг списка записей
@@ -503,59 +515,171 @@ function renderBookings(bookings) {
         const bookingElement = document.createElement('div');
         bookingElement.className = 'booking-item';
 
-        bookingElement.innerHTML = `
+        const time = `${booking.start_time.substring(0, 5)}-${booking.end_time.substring(0, 5)}`;
+        const sourceTag = booking.is_manual ? '📝 Забронировано' : '✅ Подтверждено';
+        const statusText = getStatusText(booking.status);
+
+        let contentHTML = `
             <div class="booking-header">
-                <span class="booking-client">${booking.client}</span>
-                <span class="booking-status ${booking.status}">${getStatusText(booking.status)}</span>
+                <span class="booking-source-tag">${sourceTag}</span>
+                <span class="booking-status ${booking.status}">${statusText}</span>
             </div>
-            <div class="booking-info">📞 ${booking.phone}</div>
-            <div class="booking-info">📅 ${formatDateForDisplay(new Date(booking.date))} в ${booking.time}</div>
+            <div class="booking-info">📅 ${formatDateForDisplay(new Date(booking.date))} в ${time}</div>
         `;
 
+        // Для ручных бронирований показываем редактируемые поля
+        if (booking.is_manual) {
+            const clientName = booking.client_name || '';
+            const clientPhone = booking.client_phone || '';
+
+            contentHTML += `
+                <div class="booking-editable-field">
+                    <label>👤 ФИО:</label>
+                    <input
+                        type="text"
+                        class="editable-input"
+                        value="${clientName}"
+                        placeholder="Введите ФИО"
+                        data-booking-id="${booking.id}"
+                        data-field="name"
+                        onblur="updateManualBooking(${booking.id}, this.value, null)"
+                    />
+                </div>
+                <div class="booking-editable-field">
+                    <label>📞 Телефон:</label>
+                    <input
+                        type="text"
+                        class="editable-input"
+                        value="${clientPhone}"
+                        placeholder="Введите телефон"
+                        data-booking-id="${booking.id}"
+                        data-field="phone"
+                        onblur="updateManualBooking(${booking.id}, null, this.value)"
+                    />
+                </div>
+            `;
+        } else {
+            // Для обычных записей просто показываем информацию
+            contentHTML += `
+                <div class="booking-info">👤 ${booking.client_name}</div>
+                <div class="booking-info">📞 ${booking.client_phone}</div>
+            `;
+        }
+
+        bookingElement.innerHTML = contentHTML;
         container.appendChild(bookingElement);
     });
 }
 
-// Блокировка/разблокировка слота
-window.toggleBlockSlot = async function(slotId) {
-    showLoader(true);
+// Обновление информации ручного бронирования
+window.updateManualBooking = async function(bookingId, name, phone) {
     try {
-        // Находим слот чтобы узнать текущий статус
-        let currentStatus = null;
-        for (const date in slotsData) {
-            const slot = slotsData[date].find(s => s.id === slotId);
-            if (slot) {
-                currentStatus = slot.status;
-                break;
-            }
-        }
+        // Получаем текущие значения обоих полей для этого бронирования
+        const nameInput = document.querySelector(`input[data-booking-id="${bookingId}"][data-field="name"]`);
+        const phoneInput = document.querySelector(`input[data-booking-id="${bookingId}"][data-field="phone"]`);
 
-        if (!currentStatus) {
-            tg.showAlert('❌ Слот не найден');
-            return;
-        }
+        const clientName = name !== null ? name : (nameInput ? nameInput.value : '');
+        const clientPhone = phone !== null ? phone : (phoneInput ? phoneInput.value : '');
 
-        // Переключаем статус
-        const newStatus = currentStatus === 'blocked' ? 'available' : 'blocked';
-
-        const response = await fetch(`${API_URL}/admin/slots/${slotId}`, {
+        const response = await fetch(`${API_URL}/admin/bookings/${bookingId}/manual-info`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 init_data: tg.initData,
-                status: newStatus
+                client_name: clientName.trim(),
+                client_phone: clientPhone.trim()
             })
         });
 
         const data = await response.json();
 
         if (data.success) {
-            tg.showAlert('✅ Статус слота изменен');
-            loadData();
+            // Обновляем данные в локальном массиве
+            const booking = bookingsData.find(b => b.id === bookingId);
+            if (booking) {
+                booking.client_name = clientName.trim();
+                booking.client_phone = clientPhone.trim();
+            }
+            console.log('✅ Данные обновлены');
         } else {
-            tg.showAlert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            console.error('Ошибка обновления:', data.error);
+            tg.showAlert('❌ Ошибка сохранения: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    } catch (error) {
+        console.error('Error updating manual booking:', error);
+        tg.showAlert('❌ Ошибка сохранения данных');
+    }
+};
+
+// Блокировка/разблокировка слота (создание ручного бронирования)
+window.toggleBlockSlot = async function(slotId) {
+    showLoader(true);
+    try {
+        // Находим слот чтобы узнать текущий статус
+        let currentSlot = null;
+        for (const date in slotsData) {
+            const slot = slotsData[date].find(s => s.id === slotId);
+            if (slot) {
+                currentSlot = slot;
+                break;
+            }
+        }
+
+        if (!currentSlot) {
+            tg.showAlert('❌ Слот не найден');
+            return;
+        }
+
+        // Если слот доступен - создаем ручное бронирование
+        if (currentSlot.status === 'available') {
+            // Создаем ручное бронирование (ФИО и телефон можно заполнить позже)
+            const response = await fetch(`${API_URL}/admin/bookings/manual`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    init_data: tg.initData,
+                    slot_id: slotId,
+                    client_name: '',
+                    client_phone: ''
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                tg.showAlert('✅ Слот забронирован. Заполните данные во вкладке "Записи"');
+                loadData();
+                // Переключаемся на вкладку записей
+                switchTab('bookings');
+            } else {
+                tg.showAlert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        }
+        // Если слот забронирован - разблокируем (возвращаем в доступные)
+        else if (currentSlot.status === 'booked' || currentSlot.status === 'blocked') {
+            const response = await fetch(`${API_URL}/admin/slots/${slotId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    init_data: tg.initData,
+                    status: 'available'
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                tg.showAlert('✅ Слот разблокирован');
+                loadData();
+            } else {
+                tg.showAlert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
         }
     } catch (error) {
         console.error('Error toggling slot:', error);
