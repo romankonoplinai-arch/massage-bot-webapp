@@ -105,6 +105,12 @@ async function loadData() {
                 });
             });
             renderCalendar();
+
+            // Обновляем детали выбранного дня если он был выбран
+            if (selectedDate) {
+                const dateStr = formatDate(selectedDate);
+                showDayDetails(dateStr);
+            }
         } else {
             console.error('API error:', data.error);
             tg.showAlert('Ошибка загрузки данных: ' + (data.error || 'Неизвестная ошибка'));
