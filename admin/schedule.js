@@ -321,7 +321,11 @@ async function createSlots() {
                 if (data.success) {
                     created++;
                 } else {
-                    console.error('Failed to create slot:', data.error);
+                    console.error('❌ Ошибка создания слота:');
+                    console.error('  Время:', startTime, '-', endTime);
+                    console.error('  Дата:', date);
+                    console.error('  Ответ сервера:', data.error);
+                    console.error('  Status code:', response.status);
                     errors++;
                 }
             } catch (err) {
