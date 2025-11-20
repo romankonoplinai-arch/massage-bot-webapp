@@ -740,7 +740,7 @@ function showLoader(show) {
     document.getElementById('loader').style.display = show ? 'flex' : 'none';
 }
 
-// Кнопка закрытия
-tg.MainButton.setText('Закрыть');
+// Кнопка возврата в главное меню
+tg.MainButton.setText('↩️ Вернуться в главное меню');
 tg.MainButton.onClick(() => tg.close());
 tg.MainButton.show();
