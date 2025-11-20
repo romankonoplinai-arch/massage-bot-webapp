@@ -9,8 +9,10 @@ let selectedDate = null;
 let slotsData = {}; // {date: [{id, start_time, end_time, status}, ...]}
 let bookingsData = [];
 
-// API endpoints
-const API_URL = tg.initDataUnsafe?.start_param || 'https://your-bot-url.railway.app';
+// API endpoints - Railway HTTP API
+const API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:8080/api'
+    : 'https://massage-bot-production.up.railway.app/api';
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', () => {
