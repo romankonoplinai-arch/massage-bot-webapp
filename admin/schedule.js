@@ -44,15 +44,6 @@ function initEventListeners() {
     document.getElementById('createSlotsBtn').addEventListener('click', createSlots);
     document.getElementById('bulkCreateBtn').addEventListener('click', bulkCreateSlots);
 
-    // Синхронизация с Google Calendar
-    document.getElementById('syncCalendarBtn').addEventListener('click', syncGoogleCalendar);
-
-    // Устанавливаем даты по умолчанию для синхронизации
-    const today = new Date();
-    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
-    document.getElementById('syncStartDate').valueAsDate = today;
-    document.getElementById('syncEndDate').valueAsDate = nextMonth;
-
     // Фильтры записей
     document.getElementById('statusFilter').addEventListener('change', filterBookings);
     document.getElementById('dateFilter').addEventListener('change', filterBookings);
@@ -268,7 +259,7 @@ function showDayDetails(dateStr) {
 function getStatusText(status) {
     const texts = {
         'available': 'Свободно',
-        'booked': 'Занято',
+        'booked': 'Забронировано',
         'blocked': 'Заблокировано'
     };
     return texts[status] || status;
@@ -447,52 +438,6 @@ async function bulkCreateSlots() {
     } catch (error) {
         console.error('Ошибка массового создания:', error);
         tg.showAlert('❌ Ошибка создания слотов');
-    } finally {
-        showLoader(false);
-    }
-}
-
-// Синхронизация с Google Calendar
-async function syncGoogleCalendar() {
-    const startDate = document.getElementById('syncStartDate').value;
-    const endDate = document.getElementById('syncEndDate').value;
-
-    if (!startDate || !endDate) {
-        tg.showAlert('Укажите период синхронизации');
-        return;
-    }
-
-    showLoader(true);
-    try {
-        const response = await fetch(`${API_URL}/admin/sync`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                init_data: tg.initData,
-                start_date: startDate,
-                end_date: endDate
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            const stats = data.stats;
-            tg.showAlert(
-                `✅ Синхронизация завершена!\n\n` +
-                `Создано: ${stats.created}\n` +
-                `Обновлено: ${stats.updated}\n` +
-                `Пропущено: ${stats.skipped}`
-            );
-            loadData();
-        } else {
-            tg.showAlert(`❌ Ошибка синхронизации: ${data.error}`);
-        }
-    } catch (error) {
-        console.error('Ошибка синхронизации:', error);
-        tg.showAlert('❌ Ошибка подключения к серверу');
     } finally {
         showLoader(false);
     }
