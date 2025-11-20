@@ -66,18 +66,52 @@ function switchTab(tabName) {
 async function loadData() {
     showLoader(true);
     try {
-        // TODO: Реальные запросы к API
-        // const response = await fetch(`${API_URL}/api/admin/slots?month=${currentDate.getMonth() + 1}&year=${currentDate.getFullYear()}`, {
-        //     headers: { 'Authorization': `tma ${tg.initData}` }
-        // });
-        // slotsData = await response.json();
+        // Получаем начало и конец месяца
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const startDate = new Date(year, month, 1);
+        const endDate = new Date(year, month + 1, 0);
 
-        // Заглушка для демонстрации
-        slotsData = generateMockSlotsData();
-        renderCalendar();
+        const startDateStr = formatDate(startDate);
+        const endDateStr = formatDate(endDate);
+
+        // Запрос к API
+        const response = await fetch(
+            `${API_URL}/admin/slots?init_data=${encodeURIComponent(tg.initData)}&start_date=${startDateStr}&end_date=${endDateStr}`,
+            {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Группируем слоты по датам
+            slotsData = {};
+            data.slots.forEach(slot => {
+                if (!slotsData[slot.date]) {
+                    slotsData[slot.date] = [];
+                }
+                slotsData[slot.date].push({
+                    id: slot.id,
+                    start_time: slot.start_time.substring(0, 5), // "10:00:00" -> "10:00"
+                    end_time: slot.end_time.substring(0, 5),
+                    status: slot.status,
+                    google_event_id: slot.google_event_id,
+                    booking_id: slot.booking_id
+                });
+            });
+            renderCalendar();
+        } else {
+            console.error('API error:', data.error);
+            tg.showAlert('Ошибка загрузки данных: ' + (data.error || 'Неизвестная ошибка'));
+        }
     } catch (error) {
         console.error('Ошибка загрузки данных:', error);
-        tg.showAlert('Ошибка загрузки данных');
+        tg.showAlert('Ошибка подключения к серверу');
     } finally {
         showLoader(false);
     }
@@ -245,19 +279,54 @@ async function createSlots() {
 
     showLoader(true);
     try {
-        // TODO: Реальный запрос к API
-        // await fetch(`${API_URL}/api/admin/slots`, {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         'Authorization': `tma ${tg.initData}`
-        //     },
-        //     body: JSON.stringify({ date, time_ranges: ranges })
-        // });
+        let created = 0;
+        let errors = 0;
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Создаем слоты по очереди
+        for (const range of ranges) {
+            const [startTime, endTime] = range.split('-').map(t => t.trim());
 
-        tg.showAlert(`✅ Создано ${ranges.length} слотов`);
+            if (!startTime || !endTime) {
+                console.warn('Invalid time range:', range);
+                errors++;
+                continue;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/admin/slots`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        init_data: tg.initData,
+                        date: date,
+                        start_time: startTime,
+                        end_time: endTime,
+                        status: 'available'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    created++;
+                } else {
+                    console.error('Failed to create slot:', data.error);
+                    errors++;
+                }
+            } catch (err) {
+                console.error('Error creating slot:', err);
+                errors++;
+            }
+        }
+
+        if (errors > 0) {
+            tg.showAlert(`Создано ${created} слотов, ошибок: ${errors}`);
+        } else {
+            tg.showAlert(`✅ Создано ${created} слотов`);
+        }
+
         document.getElementById('timeRanges').value = '';
         loadData();
     } catch (error) {
@@ -369,13 +438,45 @@ function renderBookings(bookings) {
 window.toggleBlockSlot = async function(slotId) {
     showLoader(true);
     try {
-        // TODO: Реальный запрос
+        // Находим слот чтобы узнать текущий статус
+        let currentStatus = null;
+        for (const date in slotsData) {
+            const slot = slotsData[date].find(s => s.id === slotId);
+            if (slot) {
+                currentStatus = slot.status;
+                break;
+            }
+        }
 
-        await new Promise(resolve => setTimeout(resolve, 300));
+        if (!currentStatus) {
+            tg.showAlert('❌ Слот не найден');
+            return;
+        }
 
-        tg.showAlert('✅ Статус слота изменен');
-        loadData();
+        // Переключаем статус
+        const newStatus = currentStatus === 'blocked' ? 'available' : 'blocked';
+
+        const response = await fetch(`${API_URL}/admin/slots/${slotId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                init_data: tg.initData,
+                status: newStatus
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            tg.showAlert('✅ Статус слота изменен');
+            loadData();
+        } else {
+            tg.showAlert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
     } catch (error) {
+        console.error('Error toggling slot:', error);
         tg.showAlert('❌ Ошибка изменения статуса');
     } finally {
         showLoader(false);
@@ -384,23 +485,34 @@ window.toggleBlockSlot = async function(slotId) {
 
 // Удаление слота
 window.deleteSlot = async function(slotId) {
-    tg.showConfirm('Удалить этот слот?', async (confirmed) => {
-        if (!confirmed) return;
+    if (!confirm('Удалить этот слот?')) return;
 
-        showLoader(true);
-        try {
-            // TODO: Реальный запрос
+    showLoader(true);
+    try {
+        const response = await fetch(
+            `${API_URL}/admin/slots/${slotId}?init_data=${encodeURIComponent(tg.initData)}`,
+            {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
 
-            await new Promise(resolve => setTimeout(resolve, 300));
+        const data = await response.json();
 
+        if (data.success) {
             tg.showAlert('✅ Слот удален');
             loadData();
-        } catch (error) {
-            tg.showAlert('❌ Ошибка удаления');
-        } finally {
-            showLoader(false);
+        } else {
+            tg.showAlert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
         }
-    });
+    } catch (error) {
+        console.error('Error deleting slot:', error);
+        tg.showAlert('❌ Ошибка удаления');
+    } finally {
+        showLoader(false);
+    }
 };
 
 // Утилиты
