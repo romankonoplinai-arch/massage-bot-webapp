@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initEventListeners() {
     // Tabs
     document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+        tab.addEventListener('click', (e) => switchTab(e, tab.dataset.tab));
     });
 
     // Навигация по месяцам
@@ -44,17 +44,26 @@ function initEventListeners() {
     document.getElementById('createSlotsBtn').addEventListener('click', createSlots);
     document.getElementById('bulkCreateBtn').addEventListener('click', bulkCreateSlots);
 
+    // Синхронизация с Google Calendar
+    document.getElementById('syncCalendarBtn').addEventListener('click', syncGoogleCalendar);
+
+    // Устанавливаем даты по умолчанию для синхронизации
+    const today = new Date();
+    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+    document.getElementById('syncStartDate').valueAsDate = today;
+    document.getElementById('syncEndDate').valueAsDate = nextMonth;
+
     // Фильтры записей
     document.getElementById('statusFilter').addEventListener('change', filterBookings);
     document.getElementById('dateFilter').addEventListener('change', filterBookings);
 }
 
 // Переключение вкладок
-function switchTab(tabName) {
+function switchTab(e, tabName) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-    event.target.classList.add('active');
+    e.target.classList.add('active');
     document.getElementById(`${tabName}-tab`).classList.add('active');
 
     if (tabName === 'bookings') {
@@ -196,7 +205,7 @@ function renderCalendar() {
                 dayElement.classList.add('has-slots');
             }
 
-            dayElement.addEventListener('click', () => selectDate(date));
+            dayElement.addEventListener('click', (e) => selectDate(e, date));
         }
 
         if (date.getTime() === today.getTime()) {
@@ -208,12 +217,12 @@ function renderCalendar() {
 }
 
 // Выбор даты
-function selectDate(date) {
+function selectDate(e, date) {
     selectedDate = date;
     const dateStr = formatDate(date);
 
     document.querySelectorAll('.day.selected').forEach(el => el.classList.remove('selected'));
-    event.target.classList.add('selected');
+    e.target.classList.add('selected');
 
     showDayDetails(dateStr);
 }
@@ -362,6 +371,52 @@ async function bulkCreateSlots() {
     } catch (error) {
         console.error('Ошибка массового создания:', error);
         tg.showAlert('❌ Ошибка создания слотов');
+    } finally {
+        showLoader(false);
+    }
+}
+
+// Синхронизация с Google Calendar
+async function syncGoogleCalendar() {
+    const startDate = document.getElementById('syncStartDate').value;
+    const endDate = document.getElementById('syncEndDate').value;
+
+    if (!startDate || !endDate) {
+        tg.showAlert('Укажите период синхронизации');
+        return;
+    }
+
+    showLoader(true);
+    try {
+        const response = await fetch(`${API_URL}/admin/sync`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                init_data: tg.initData,
+                start_date: startDate,
+                end_date: endDate
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            const stats = data.stats;
+            tg.showAlert(
+                `✅ Синхронизация завершена!\n\n` +
+                `Создано: ${stats.created}\n` +
+                `Обновлено: ${stats.updated}\n` +
+                `Пропущено: ${stats.skipped}`
+            );
+            loadData();
+        } else {
+            tg.showAlert(`❌ Ошибка синхронизации: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Ошибка синхронизации:', error);
+        tg.showAlert('❌ Ошибка подключения к серверу');
     } finally {
         showLoader(false);
     }
