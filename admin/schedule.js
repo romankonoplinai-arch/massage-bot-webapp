@@ -360,13 +360,85 @@ async function bulkCreateSlots() {
         return;
     }
 
+    // Парсим временные диапазоны
+    const ranges = timeRanges.split('\n').filter(r => r.trim());
+    if (ranges.length === 0) {
+        tg.showAlert('Укажите хотя бы один временной диапазон');
+        return;
+    }
+
     showLoader(true);
     try {
-        // TODO: Реальный запрос к API
+        let created = 0;
+        let errors = 0;
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Генерируем даты в диапазоне
+        const start = new Date(startDate);
+        const end = new Date(endDate);
 
-        tg.showAlert('✅ Слоты созданы на выбранный период');
+        const currentDate = new Date(start);
+
+        while (currentDate <= end) {
+            // Получаем день недели (0-6, где 0 = воскресенье)
+            const dayOfWeek = currentDate.getDay();
+
+            // Проверяем, выбран ли этот день недели
+            if (selectedWeekdays.includes(dayOfWeek)) {
+                const dateStr = formatDate(currentDate);
+
+                // Создаем слоты для этой даты
+                for (const range of ranges) {
+                    const [startTime, endTime] = range.split('-').map(t => t.trim());
+
+                    if (!startTime || !endTime) {
+                        console.warn('Invalid time range:', range);
+                        errors++;
+                        continue;
+                    }
+
+                    try {
+                        const response = await fetch(`${API_URL}/admin/slots`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                init_data: tg.initData,
+                                date: dateStr,
+                                start_time: startTime,
+                                end_time: endTime,
+                                status: 'available'
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            created++;
+                        } else {
+                            if (data.error !== 'Slot already exists') {
+                                console.error('Failed to create slot:', data.error);
+                                errors++;
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error creating slot:', err);
+                        errors++;
+                    }
+                }
+            }
+
+            // Переходим к следующему дню
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        if (errors > 0) {
+            tg.showAlert(`Создано ${created} слотов, ошибок: ${errors}`);
+        } else {
+            tg.showAlert(`✅ Создано ${created} слотов на выбранный период`);
+        }
+
+        document.getElementById('bulkTimeRanges').value = '';
         loadData();
     } catch (error) {
         console.error('Ошибка массового создания:', error);
