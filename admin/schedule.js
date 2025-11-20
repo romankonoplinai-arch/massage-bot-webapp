@@ -260,7 +260,7 @@ function getStatusText(status) {
     const texts = {
         'available': 'Свободно',
         'booked': 'Забронировано',
-        'blocked': 'Заблокировано'
+        'blocked': 'Забронировано'
     };
     return texts[status] || status;
 }
